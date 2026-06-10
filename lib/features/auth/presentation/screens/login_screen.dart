@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rollapp_negocio_clean/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:rollapp_negocio_clean/features/auth/presentation/bloc/auth_event.dart';
-import 'package:rollapp_negocio_clean/features/auth/presentation/bloc/auth_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rollapp_negocio_clean/features/auth/presentation/riverpod/auth_provider.dart';
+import 'package:rollapp_negocio_clean/features/auth/presentation/riverpod/auth_state.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,102 +24,111 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
-      context.read<AuthBloc>().add(
-        AuthLoginRequested(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        ),
-      );
+      // Antes: context.read<AuthBloc>().add(AuthLoginRequested(...))
+      ref
+          .read(authProvider.notifier)
+          .login(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(authProvider); // Antes: BlocBuilder
+    final isLoading = state is AuthLoading;
+
+    // Antes: listener dentro de BlocConsumer
+    ref.listen<AuthState>(authProvider, (previous, current) {
+      if (current is AuthError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(current.message), backgroundColor: Colors.red),
+        );
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: Text('Login')),
-      body: BlocConsumer<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final isLoading = state is AuthLoading;
-
-          return Padding(
-            padding: EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(Icons.lock_outline, size: 80, color: Colors.blue),
-                  SizedBox(height: 40),
-                  TextFormField(
-                    controller: _emailController,
-                    enabled: !isLoading,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      prefix: Icon(Icons.email),
+      body: Padding(
+        padding: EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(Icons.lock_outline, size: 80, color: Colors.blue),
+              SizedBox(height: 40),
+              TextFormField(
+                controller: _emailController,
+                enabled: !isLoading,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  border: ShapedInputBorder(
+                    gapPadding: 20,
+                    borderSide: BorderSide(
+                      color: Colors.grey,
+                      style: BorderStyle.none,
+                      width: 1,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Invalid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    enabled: !isLoading,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                      prefix: Icon(Icons.lock),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter password';
-                      }
-                      if (value.length < 6) {
-                        return 'Minimum length is 6';
-                      }
-                      return null;
-                    },
                   ),
-                  SizedBox(height: 16),
-
-                  ElevatedButton(
-                    onPressed: isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text('Login'),
-                  ),
-                ],
+                  alignLabelWithHint: true,
+                  labelText: 'Email',
+                  hintText: 'dasdad',
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Campo requerido';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Email inválido';
+                  }
+                  return null;
+                },
               ),
-            ),
-          );
-        },
-        listener: (context, state) {
-          if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                enabled: !isLoading,
+                obscureText: true,
+                decoration: InputDecoration(
+                  alignLabelWithHint: true,
+                  labelText: 'Password',
+                  prefix: Icon(Icons.lock),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Campo requerido';
+                  }
+                  if (value.length < 3) {
+                    return 'La longitud mínima es 3';
+                  }
+                  return null;
+                },
               ),
-            );
-          }
-        },
+              SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('Login'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

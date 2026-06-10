@@ -1,25 +1,54 @@
+import 'package:dio/dio.dart';
 import 'package:rollapp_negocio_clean/core/error/exceptios.dart';
+import 'package:rollapp_negocio_clean/features/auth/data/models/login_model.dart';
 import 'package:rollapp_negocio_clean/features/auth/data/models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<UserModel> login(String email, String password);
+  Future<LoginModel> login(String email, String password);
+  Future<UserModel> getUser();
   Future<void> logout();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  @override
-  Future<UserModel> login(String email, String password) async {
-    await Future.delayed(Duration(seconds: 2));
+  final Dio dio;
 
-    if (email == 'test@test.com' && password == '123456') {
-      return UserModel(id: '1', email: 'test@test.com', name: 'Test User');
-    } else {
-      throw InvalidCredentialsException();
+  AuthRemoteDataSourceImpl({required this.dio});
+
+  @override
+  Future<LoginModel> login(String email, String password) async {
+    try {
+      final response = await dio.post(
+        '/usuarios/login',
+        data: {'correo': email, 'contrasena': password},
+      );
+
+      return LoginModel.fromJson(response.data['data']);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw InvalidCredentialsException();
+      }
+
+      throw ServerException();
     }
   }
 
   @override
   Future<void> logout() async {
     await Future.delayed(Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<UserModel> getUser() async {
+    try {
+      final response = await dio.get('/negocio/usuarios/permisos');
+
+      return UserModel.fromJson(response.data['data']['usuario']);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        throw InvalidCredentialsException();
+      }
+
+      throw ServerException();
+    }
   }
 }

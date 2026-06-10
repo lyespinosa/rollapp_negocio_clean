@@ -20,8 +20,14 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final user = await authLocalDataSource.getCachedUser();
       return Right(user);
-    } catch (e) {
-      return Left(CacheFailure());
+    } on JsonParsingException catch (e) {
+      return Left(JsonParsingFailure(e.message));
+    } on ModelMappingException catch (e) {
+      return Left(ModelMappingFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -30,8 +36,14 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = await authLocalDataSource.getCachedToken();
       return Right(token != null);
-    } catch (e) {
-      return Left(CacheFailure());
+    } on JsonParsingException catch (e) {
+      return Left(JsonParsingFailure(e.message));
+    } on ModelMappingException catch (e) {
+      return Left(ModelMappingFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -41,16 +53,19 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final user = await authRemoteDataSource.login(email, password);
-      await authLocalDataSource.cacheToken('mock_token_${user.id}');
-      await authLocalDataSource.cacheUser(user);
-      return Right(user);
-    } on InvalidCredentialsException {
-      return Left(InvalidCredentialsFailure());
-    } on ServerException {
-      return Left(ServerFailure());
-    } catch (e) {
-      return Left(ServerFailure());
+      final loginResponse = await authRemoteDataSource.login(email, password);
+      await authLocalDataSource.cacheToken(loginResponse.token);
+      final userResponse = await authRemoteDataSource.getUser();
+      await authLocalDataSource.cacheUser(userResponse);
+      return Right(userResponse);
+    } on JsonParsingException catch (e) {
+      return Left(JsonParsingFailure(e.message));
+    } on ModelMappingException catch (e) {
+      return Left(ModelMappingFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 
@@ -60,8 +75,14 @@ class AuthRepositoryImpl implements AuthRepository {
       await authRemoteDataSource.logout();
       await authLocalDataSource.clearToken();
       return Right(null);
-    } catch (e) {
-      return Left(ServerFailure());
+    } on JsonParsingException catch (e) {
+      return Left(JsonParsingFailure(e.message));
+    } on ModelMappingException catch (e) {
+      return Left(ModelMappingFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
     }
   }
 }

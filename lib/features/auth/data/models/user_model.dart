@@ -1,13 +1,23 @@
 import 'package:rollapp_negocio_clean/features/auth/domain/entity/user_entity.dart';
 
 class UserModel extends UserEntity {
-  UserModel({required super.id, required super.email, required super.name});
+  const UserModel({
+    required super.id,
+    required super.nombre,
+    required super.paterno,
+    required super.correo,
+  });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(id: json['id'], email: json['email'], name: json['name']);
+    return UserModel(
+      id: json['id'],
+      nombre: json['nombre'],
+      paterno: json['paterno'],
+      correo: json['email'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'email': email, 'name': name};
+    return {'id': id, 'nombre': nombre, 'paterno': paterno, 'email': correo};
   }
 }

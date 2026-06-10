@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rollapp_negocio_clean/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rollapp_negocio_clean/router.dart';
 
 import 'injection_container.dart' as di;
@@ -8,29 +7,21 @@ import 'injection_container.dart' as di;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
-
-  runApp(MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di.sl<AuthBloc>(),
-      child: Builder(
-        builder: (context) {
-          final authBloc = context.read<AuthBloc>();
-          final appRouter = AppRouter(authBloc: authBloc);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Antes: AppRouter(authBloc: authBloc).router
+    final router = ref.watch(routerProvider);
 
-          return MaterialApp.router(
-            title: 'Auth Clean App',
-            routerConfig: appRouter.router,
-            debugShowCheckedModeBanner: false,
-          );
-        },
-      ),
+    return MaterialApp.router(
+      title: 'Auth Clean App',
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
