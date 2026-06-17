@@ -21,15 +21,15 @@ class ProductoNotifier
 
   Future<List<ProductoListadoEntity>> _cargar() async {
     final result = await di.sl<VerListaProductosUseCase>()(NoParams());
-    return result.fold((failure) => throw failure, (productos) {
-      return productos;
-    });
+    return result.fold((failure) => throw failure, (productos) => productos);
   }
 
   Future<void> recargar() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_cargar);
   }
+
+  Future<void> refresh() async {}
 }
 
 final filtroCategoriaProvider = StateProvider.autoDispose<String>(

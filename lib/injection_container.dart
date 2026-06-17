@@ -17,6 +17,10 @@ import 'package:rollapp_negocio_clean/features/producto/domain/usecases/crear_pr
 import 'package:rollapp_negocio_clean/features/producto/domain/usecases/editar_producto_usecase.dart';
 import 'package:rollapp_negocio_clean/features/producto/domain/usecases/eliminar_producto_usecase.dart';
 import 'package:rollapp_negocio_clean/features/producto/domain/usecases/ver_lista_productos_usecase.dart';
+import 'package:rollapp_negocio_clean/features/sucursal/data/datasource/sucursal_remote_datasource.dart';
+import 'package:rollapp_negocio_clean/features/sucursal/data/repository/sucursal_repository_impl.dart';
+import 'package:rollapp_negocio_clean/features/sucursal/domain/repository/sucursal_repository.dart';
+import 'package:rollapp_negocio_clean/features/sucursal/domain/usecases/ver_lista_sucursales_usecase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final sl = GetIt.instance;
@@ -58,10 +62,20 @@ Future init() async {
     () => SharedPreferencesAsync(),
   );
 
+  sl.registerLazySingleton(() => VerListaSucursalesUseCase(repository: sl()));
+
+  sl.registerLazySingleton<SucursalRepository>(
+    () => SucursalRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton<SucursalRemoteDataSource>(
+    () => SucursalRemoteDataSourceImpl(dio: sl()),
+  );
+
   sl.registerLazySingleton<Dio>(() {
     final dio = Dio(
       BaseOptions(
-        baseUrl: '----',
+        baseUrl: 'https://darkslategrey-bison-707919.hostingersite.com/api',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Accept': 'application/json'},
